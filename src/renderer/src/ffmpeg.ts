@@ -9,6 +9,7 @@ import { pcmAudioCodecs, getMapStreamsArgs, isMov, LiteFFprobeStream } from './u
 import { getSuffixedOutPath, isExecaFailure } from './util';
 import { isDurationValid } from './segments';
 import { FFprobeChapter, FFprobeFormat, FFprobeProbeResult, FFprobeStream } from '../../../ffprobe';
+import { parseSrt } from './edlFormats';
 
 const FileType = window.require('file-type');
 const { pathExists } = window.require('fs-extra');
@@ -28,6 +29,15 @@ export class RefuseOverwriteError extends Error {
   }
 }
 
+export function fixRemoteBuffer(buffer: Buffer) {
+  // if we don't do this when creating a Blob, we get:
+  // "Failed to construct 'Blob': The provided ArrayBufferView value must not be resizable."
+  // maybe when moving away from @electron/remote, it's not needed anymore?
+  const buffer2 = Buffer.allocUnsafe(buffer.length);
+  buffer.copy(buffer2);
+  return buffer2;
+}
+
 export function logStdoutStderr({ stdout, stderr }: { stdout: Buffer, stderr: Buffer }) {
   if (stdout.length > 0) {
     console.log('%cSTDOUT:', 'color: green; font-weight: bold');
@@ -39,11 +49,11 @@ export function logStdoutStderr({ stdout, stderr }: { stdout: Buffer, stderr: Bu
   }
 }
 
-export function isCuttingStart(cutFrom) {
+export function isCuttingStart(cutFrom: number) {
   return cutFrom > 0;
 }
 
-export function isCuttingEnd(cutTo, duration) {
+export function isCuttingEnd(cutTo: number, duration: number | undefined) {
   if (!isDurationValid(duration)) return true;
   return cutTo < duration;
 }
@@ -492,11 +502,24 @@ async function renderThumbnail(filePath: string, timestamp: number) {
 
   const { stdout } = await runFfmpeg(args);
 
-  const blob = new Blob([stdout], { type: 'image/jpeg' });
+  const blob = new Blob([fixRemoteBuffer(stdout)], { type: 'image/jpeg' });
   return URL.createObjectURL(blob);
 }
 
-export async function extractSubtitleTrack(filePath: string, streamId: number) {
+export async function extractSubtitleTrackToSegments(filePath: string, streamId: number) {
+  const args = [
+    '-hide_banner',
+    '-i', filePath,
+    '-map', `0:${streamId}`,
+    '-f', 'srt',
+    '-',
+  ];
+
+  const { stdout } = await runFfmpeg(args);
+  return parseSrt(stdout.toString('utf8'));
+}
+
+export async function extractSubtitleTrackVtt(filePath: string, streamId: number) {
   const args = [
     '-hide_banner',
     '-i', filePath,
@@ -507,7 +530,7 @@ export async function extractSubtitleTrack(filePath: string, streamId: number) {
 
   const { stdout } = await runFfmpeg(args);
 
-  const blob = new Blob([stdout], { type: 'text/vtt' });
+  const blob = new Blob([fixRemoteBuffer(stdout)], { type: 'text/vtt' });
   return URL.createObjectURL(blob);
 }
 
@@ -696,4 +719,6 @@ export async function cutEncodeSmartPart({ filePath, cutFrom, cutTo, outPath, ou
   ];
 
   await runFfmpeg(ffmpegArgs);
+
+  return ffmpegArgs;
 }

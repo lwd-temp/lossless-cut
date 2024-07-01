@@ -11,8 +11,8 @@ import debounce from 'lodash/debounce';
 import yargsParser from 'yargs-parser';
 import JSON5 from 'json5';
 import remote from '@electron/remote/main';
-import { stat } from 'fs/promises';
-import assert from 'assert';
+import { stat } from 'node:fs/promises';
+import assert from 'node:assert';
 
 import logger from './logger.js';
 import menu from './menu.js';
@@ -231,7 +231,10 @@ function parseCliArgs(rawArgv = process.argv) {
   // dev: First 2 args are electron and the index.js
   const argsWithoutAppName = rawArgv.length > ignoreFirstArgs ? rawArgv.slice(ignoreFirstArgs) : [];
 
-  return yargsParser(argsWithoutAppName, { boolean: ['allow-multiple-instances', 'disable-networking'], string: ['settings-json'] });
+  return yargsParser(argsWithoutAppName, {
+    boolean: ['allow-multiple-instances', 'disable-networking'],
+    string: ['settings-json', 'config-dir'],
+  });
 }
 
 const argv = parseCliArgs();
@@ -330,7 +333,7 @@ const readyPromise = app.whenReady();
 (async () => {
   try {
     logger.info('Initializing config store');
-    await configStore.init();
+    await configStore.init({ customConfigDir: argv['configDir'] });
 
     const allowMultipleInstances = configStore.get('allowMultipleInstances');
 
@@ -371,7 +374,8 @@ const readyPromise = app.whenReady();
 
 
     if (isDev) {
-      const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer'); // eslint-disable-line global-require,import/no-extraneous-dependencies
+      // eslint-disable-next-line @typescript-eslint/no-var-requires,global-require,import/no-extraneous-dependencies
+      const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer');
 
       installExtension(REACT_DEVELOPER_TOOLS)
         .then((name: string) => logger.info('Added Extension', name))

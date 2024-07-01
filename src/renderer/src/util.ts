@@ -5,9 +5,9 @@ import prettyBytes from 'pretty-bytes';
 import sortBy from 'lodash/sortBy';
 import pRetry, { Options } from 'p-retry';
 import { ExecaError } from 'execa';
-import type * as FsPromises from 'fs/promises';
+import type * as FsPromises from 'node:fs/promises';
 import type * as FsExtra from 'fs-extra';
-import type { PlatformPath } from 'path';
+import type { PlatformPath } from 'node:path';
 
 import isDev from './isDev';
 import Swal, { toast } from './swal';
@@ -132,7 +132,7 @@ export const utimesWithRetry = async (path: string, atime: number, mtime: number
 export const getFrameDuration = (fps?: number) => 1 / (fps ?? 30);
 
 export async function transferTimestamps({ inPath, outPath, cutFrom = 0, cutTo = 0, duration = 0, treatInputFileModifiedTimeAsStart = true, treatOutputFileModifiedTimeAsStart }: {
-  inPath: string, outPath: string, cutFrom?: number | undefined, cutTo?: number | undefined, duration?: number | undefined, treatInputFileModifiedTimeAsStart?: boolean, treatOutputFileModifiedTimeAsStart: boolean | null | undefined
+  inPath: string, outPath: string, cutFrom?: number | undefined, cutTo?: number | undefined, duration?: number | undefined, treatInputFileModifiedTimeAsStart?: boolean | null | undefined, treatOutputFileModifiedTimeAsStart: boolean | null | undefined
 }) {
   if (treatOutputFileModifiedTimeAsStart == null) return; // null means disabled;
 

@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import Switch from './Switch';
 
 
-const ValueTuner = memo(({ style, title, value, setValue, onFinished, resolution = 1000, min: minIn = 0, max: maxIn = 1, resetToDefault }: {
+function ValueTuner({ style, title, value, setValue, onFinished, resolution = 1000, min: minIn = 0, max: maxIn = 1, resetToDefault }: {
   style?: CSSProperties, title: string, value: number, setValue: (string) => void, onFinished: () => void, resolution?: number, min?: number, max?: number, resetToDefault: () => void
-}) => {
+}) {
   const { t } = useTranslation();
 
   const [min, setMin] = useState(minIn);
@@ -35,7 +35,7 @@ const ValueTuner = memo(({ style, title, value, setValue, onFinished, resolution
     <div style={{ background: 'var(--gray1)', color: 'var(--gray12)', position: 'absolute', bottom: 0, padding: 10, margin: 10, borderRadius: 10, ...style }}>
       <div style={{ display: 'flex', alignItems: 'center', flexBasis: 400, marginBottom: '.2em' }}>
         <div>{title}</div>
-        <div style={{ marginLeft: '.5em', fontWeight: 'bold', marginRight: '.5em', textDecoration: 'underline' }}>{value.toFixed(4)}</div>
+        <div style={{ marginLeft: '.5em', fontWeight: 'bold', marginRight: '.5em', textDecoration: 'underline', fontFamily: 'monospace', width: '5em' }}>{value.toFixed(4)}</div>
         <Switch checked={isZoomed} onCheckedChange={toggleZoom} style={{ flexShrink: 0 }} /><span style={{ marginLeft: '.3em' }}>{t('Precise')}</span>
       </div>
 
@@ -49,6 +49,6 @@ const ValueTuner = memo(({ style, title, value, setValue, onFinished, resolution
       </div>
     </div>
   );
-});
+}
 
-export default ValueTuner;
+export default memo(ValueTuner);

@@ -4,8 +4,7 @@ import { MotionConfig } from 'framer-motion';
 import { enableMapSet } from 'immer';
 import * as Electron from 'electron';
 import Remote from '@electron/remote';
-
-import 'sweetalert2/dist/sweetalert2.css';
+import type path from 'node:path';
 
 import '@fontsource/open-sans/300.css';
 import '@fontsource/open-sans/300-italic.css';
@@ -27,6 +26,7 @@ import ErrorBoundary from './ErrorBoundary';
 import './i18n';
 
 import './main.css';
+import './swal2.scss';
 
 
 type TypedRemote = Omit<typeof Remote, 'require'> & {
@@ -42,6 +42,7 @@ declare global {
     require: <T extends string>(module: T) => (
       T extends '@electron/remote' ? TypedRemote :
       T extends 'electron' ? typeof Electron :
+      T extends 'path' ? typeof path :
       // todo more
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       any

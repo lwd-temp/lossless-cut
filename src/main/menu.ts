@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import electron, { BrowserWindow } from 'electron';
+import electron, { BrowserWindow, MenuItem, MenuItemConstructorOptions } from 'electron';
 import { t } from 'i18next';
 
 import { homepage, getReleaseUrl, licensesPage } from './constants.js';
@@ -15,8 +15,9 @@ const { Menu } = electron;
 export default ({ app, mainWindow, newVersion, isStoreBuild }: {
   app: Electron.App, mainWindow: BrowserWindow, newVersion?: string | undefined, isStoreBuild: boolean,
 }) => {
-  const menu = [
-    ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
+  // todo TS mainWindow.webContents.send
+  const menu: (MenuItemConstructorOptions | MenuItem)[] = [
+    ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
 
     {
       label: esc(t('File')),
@@ -26,6 +27,12 @@ export default ({ app, mainWindow, newVersion, isStoreBuild }: {
           accelerator: 'CmdOrCtrl+O',
           async click() {
             mainWindow.webContents.send('openFilesDialog');
+          },
+        },
+        {
+          label: esc(t('Open folder')),
+          async click() {
+            mainWindow.webContents.send('openDirDialog');
           },
         },
         {
@@ -67,6 +74,12 @@ export default ({ app, mainWindow, newVersion, isStoreBuild }: {
               label: esc(t('Frame numbers (CSV)')),
               click() {
                 mainWindow.webContents.send('importEdlFile', 'csv-frames');
+              },
+            },
+            {
+              label: esc(t('Cutlist')),
+              click() {
+                mainWindow.webContents.send('importEdlFile', 'cutlist');
               },
             },
             {
@@ -186,7 +199,7 @@ export default ({ app, mainWindow, newVersion, isStoreBuild }: {
         // Due to Apple Review Guidelines, we cannot include an Exit menu item here
         // Apple has their own Quit from the app menu
         ...(process.platform !== 'darwin' ? [
-          { type: 'separator' },
+          { type: 'separator' } as const,
           {
             label: esc(t('Exit')),
             click() {
@@ -208,7 +221,7 @@ export default ({ app, mainWindow, newVersion, isStoreBuild }: {
         { role: 'cut', label: esc(t('Cut')) },
         { role: 'copy', label: esc(t('Copy')) },
         { role: 'paste', label: esc(t('Paste')) },
-        { role: 'selectall', label: esc(t('Select All')) },
+        { role: 'selectAll', label: esc(t('Select All')) },
         { type: 'separator' },
         {
           label: esc(t('Tracks')),
@@ -330,15 +343,18 @@ export default ({ app, mainWindow, newVersion, isStoreBuild }: {
       label: esc(t('View')),
       submenu: [
         { role: 'togglefullscreen', label: esc(t('Toggle Full Screen')) },
+        { role: 'resetZoom', label: esc(t('Reset font size')) },
+        { role: 'zoomIn', label: esc(t('Increase font size')) },
+        { role: 'zoomOut', label: esc(t('Decrease font size')) },
       ],
     },
 
     // On Windows the windowMenu has a close Ctrl+W which clashes with File->Close shortcut
     ...(process.platform === 'darwin'
-      ? [{ role: 'windowMenu', label: esc(t('Window')) }]
+      ? [{ role: 'windowMenu' as const, label: esc(t('Window')) }]
       : [{
         label: esc(t('Window')),
-        submenu: [{ role: 'minimize', label: esc(t('Minimize')) }],
+        submenu: [{ role: 'minimize' as const, label: esc(t('Minimize')) }],
       }]
     ),
 
@@ -434,7 +450,7 @@ export default ({ app, mainWindow, newVersion, isStoreBuild }: {
           label: esc(t('Licenses')),
           click() { electron.shell.openExternal(licensesPage); },
         },
-        ...(process.platform !== 'darwin' ? [{ role: 'about', label: esc(t('About LosslessCut')) }] : []),
+        ...(process.platform !== 'darwin' ? [{ role: 'about' as const, label: esc(t('About LosslessCut')) }] : []),
       ],
     },
   ];
@@ -451,6 +467,5 @@ export default ({ app, mainWindow, newVersion, isStoreBuild }: {
     });
   }
 
-  // @ts-expect-error todo
   Menu.setApplicationMenu(Menu.buildFromTemplate(menu));
 };

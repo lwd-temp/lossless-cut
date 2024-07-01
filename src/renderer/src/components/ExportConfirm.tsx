@@ -1,11 +1,11 @@
-import { CSSProperties, memo, useCallback, useMemo } from 'react';
+import { CSSProperties, Dispatch, SetStateAction, memo, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WarningSignIcon, CrossIcon } from 'evergreen-ui';
 import { FaRegCheckCircle } from 'react-icons/fa';
 import i18n from 'i18next';
 import { useTranslation, Trans } from 'react-i18next';
 import { IoIosHelpCircle } from 'react-icons/io';
-import { SweetAlertIcon } from 'sweetalert2';
+import type { SweetAlertIcon } from 'sweetalert2';
 
 import ExportButton from './ExportButton';
 import ExportModeButton from './ExportModeButton';
@@ -28,17 +28,18 @@ import { InverseCutSegment, SegmentToExport } from '../types';
 import { GenerateOutSegFileNames } from '../util/outputNameTemplate';
 import { FFprobeStream } from '../../../../ffprobe';
 import { AvoidNegativeTs } from '../../../../types';
+import TextInput from './TextInput';
 
 
 const boxStyle: CSSProperties = { margin: '15px 15px 50px 15px', borderRadius: 10, padding: '10px 20px', minHeight: 500, position: 'relative' };
 
 const outDirStyle: CSSProperties = { ...highlightedTextStyle, wordBreak: 'break-all', cursor: 'pointer' };
 
-const warningStyle: CSSProperties = { color: 'var(--red11)', fontSize: '80%', marginBottom: '.5em' };
+const warningStyle: CSSProperties = { color: 'var(--orange8)', fontSize: '80%', marginBottom: '.5em' };
 
 const HelpIcon = ({ onClick, style }: { onClick: () => void, style?: CSSProperties }) => <IoIosHelpCircle size={20} role="button" onClick={withBlur(onClick)} style={{ cursor: 'pointer', color: primaryTextColor, verticalAlign: 'middle', ...style }} />;
 
-const ExportConfirm = memo(({
+function ExportConfirm({
   areWeCutting,
   selectedSegments,
   segmentsToExport,
@@ -61,6 +62,8 @@ const ExportConfirm = memo(({
   needSmartCut,
   mergedOutFileName,
   setMergedOutFileName,
+  smartCutBitrate,
+  setSmartCutBitrate,
 } : {
   areWeCutting: boolean,
   selectedSegments: InverseCutSegment[],
@@ -84,7 +87,9 @@ const ExportConfirm = memo(({
   needSmartCut: boolean,
   mergedOutFileName: string | undefined,
   setMergedOutFileName: (a: string) => void,
-}) => {
+  smartCutBitrate: number | undefined,
+  setSmartCutBitrate: Dispatch<SetStateAction<number | undefined>>,
+}) {
   const { t } = useTranslation();
 
   const { changeOutDir, keyframeCut, toggleKeyframeCut, preserveMovData, movFastStart, avoidNegativeTs, setAvoidNegativeTs, autoDeleteMergedSegments, exportConfirmEnabled, toggleExportConfirmEnabled, segmentsToChapters, toggleSegmentsToChapters, preserveMetadataOnMerge, togglePreserveMetadataOnMerge, enableSmartCut, setEnableSmartCut, effectiveExportMode, enableOverwriteOutput, setEnableOverwriteOutput, ffmpegExperimental, setFfmpegExperimental, cutFromAdjustmentFrames, setCutFromAdjustmentFrames } = useUserSettings();
@@ -164,6 +169,16 @@ const ExportConfirm = memo(({
   }, [t]);
 
   const canEditTemplate = !willMerge || !autoDeleteMergedSegments;
+
+  const handleSmartCutBitrateToggle = useCallback((checked: boolean) => {
+    setSmartCutBitrate(() => (checked ? undefined : 10000));
+  }, [setSmartCutBitrate]);
+
+  const handleSmartCutBitrateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = parseInt(e.target.value, 10);
+    if (Number.isNaN(v) || v <= 0) return;
+    setSmartCutBitrate(v);
+  }, [setSmartCutBitrate]);
 
   // https://stackoverflow.com/questions/33454533/cant-scroll-to-top-of-flex-item-that-is-overflowing-container
   return (
@@ -347,6 +362,26 @@ const ExportConfirm = memo(({
                           </td>
                         </tr>
 
+                        {needSmartCut && (
+                          <tr>
+                            <td>
+                              {t('Smart cut auto detect bitrate')}
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                {smartCutBitrate != null && (
+                                  <>
+                                    <TextInput value={smartCutBitrate} onChange={handleSmartCutBitrateChange} style={{ width: '4em', flexGrow: 0, marginRight: '.3em' }} />
+                                    <span style={{ marginRight: '.3em' }}>{t('kbit/s')}</span>
+                                  </>
+                                )}
+                                <span><Switch checked={smartCutBitrate == null} onCheckedChange={handleSmartCutBitrateToggle} /></span>
+                              </div>
+                            </td>
+                            <td />
+                          </tr>
+                        )}
+
                         {!needSmartCut && (
                           <tr>
                             <td>
@@ -484,7 +519,7 @@ const ExportConfirm = memo(({
               animate={{ opacity: 1, translateX: 0 }}
               exit={{ opacity: 0, translateX: 50 }}
               transition={{ duration: 0.4, easings: ['easeOut'] }}
-              style={{ display: 'flex', alignItems: 'flex-end', background: 'rgba(0,0,0,0.5)' }}
+              style={{ display: 'flex', alignItems: 'flex-end', background: 'var(--gray2)' }}
             >
               <ToggleExportConfirm size={25} />
               <div style={{ fontSize: 13, marginLeft: 3, marginRight: 7, maxWidth: 120, lineHeight: '100%', color: exportConfirmEnabled ? 'var(--gray12)' : 'var(--gray11)', cursor: 'pointer' }} role="button" onClick={toggleExportConfirmEnabled}>{t('Show this page before exporting?')}</div>
@@ -504,6 +539,6 @@ const ExportConfirm = memo(({
       )}
     </AnimatePresence>
   );
-});
+}
 
-export default ExportConfirm;
+export default memo(ExportConfirm);
